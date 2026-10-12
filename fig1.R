@@ -173,7 +173,7 @@ cox <- function(data, exposures, outcomes, covar, condition = T, early = F) {
         ) %>%
         mutate(
           !!paste0(var, "_diag_age") := as.numeric(!!sym(paste0(var, "_fu"))) + age,
-          !!paste0(var, "_inci") := ifelse(!!sym(paste0(var, "_inci")) == 1 & !!sym(paste0(var, "_diag_age")) < 50, 1, 0),
+          !!paste0(var, "_inci") := ifelse(!!sym(paste0(var, "_inci")) == 1 & !!sym(paste0(var, "_diag_age")) < 55, 1, 0),
           !!paste0(var) := ifelse(!!sym(paste0(var, "_inci")) == 1, 1, 0)
         ) %>%
         select(-!!sym(paste0(var, "_diag_age")))
