@@ -28,7 +28,6 @@ rm(list = ls())
 load("./Project/PAC and cancer/Data/UKB/ukb_aging_ca_Dec.RData")
 load("./Project/PAC and cancer/Data/UKB/ukb_aging_ca_reg_Dec.RData") # Added dataset
 
-
 # Add cancer registry data----
 ca_diseases <- hesin_all_clean %>%
   filter(Category == "Cancers") %>%
@@ -37,17 +36,10 @@ ca_diseases <- hesin_all_clean %>%
   setdiff(c("Liver Mets.", "Lymph Node Mets.")) %>%
   union("Brain Cancer")
 ca_diseases
-# 24 cancers
-# [1] "NHL"                "Uterine Cancer"     "Skin Cancer"        "Oesophageal Cancer" "Ovarian Cancer"
-# [6] "Pancreatic Cancer"  "Breast Cancer"      "Melanoma"           "Bowel Cancer"       "Prostate Cancer"
-# [11] "Bladder Cancer"     "Lung Cancer"        "Thyroid Cancer"     "Liver Cancer"       "Kidney Cancer"
-# [16] "Leukaemia"          "Myelodysplasia"     "Polycythaemia Vera" "MGUS"               "Stomach Cancer"
-# [21] "Mesothelioma"       "Plasma Cell Cancer" "Biliary Cancer"     "Brain Cancer"
 
 date_cols_reg_death <- paste0(ca_diseases, "_reg_death_date") # Hesin only (from hallmark_all_final)
 date_cols_reg <- paste0(ca_diseases, "_reg_date") # Cancer registry only (from ukb_ca)
 date_cols_hesin <- paste0(ca_diseases, "_date") # Hesin only (from ukb_ca_death)
-
 
 ukb_ca <- ukb_ca %>%
   mutate(ca_reg_date = ca_date) %>%
@@ -81,11 +73,9 @@ mapping <- list(
   Proteomics        = c("LP", "AIC", "CS"),
   Metabolomics      = c("DNS", "MD"),
   Clinical          = c("DNS", "CS", "SCE", "MD"),
-  # Imaging           = c("GI","EA","LP","TA","DNS","CS","MD","AIC","SCE"),
   Disease           = c("GI", "EA", "LP", "TA", "DNS", "CS", "MD", "AIC", "SCE")
 )
 
-
 mat <- matrix(0,
   nrow = length(hallmark), ncol = length(clock),
   dimnames = list(hallmark, clock)
@@ -95,7 +85,6 @@ for (cl in names(mapping)) {
   mat[mapping[[cl]], cl] <- 1
 }
 
-
 mat <- matrix(0,
   nrow = length(hallmark), ncol = length(clock),
   dimnames = list(hallmark, clock)
@@ -103,39 +92,8 @@ mat <- matrix(0,
 for (cl in names(mapping)) {
   mat[mapping[[cl]], cl] <- 1
 }
-
 
 mat2 <- cbind(mat, Cancer = NA)
-
-# Vert
-# Heatmap(
-#   mat2,
-#   col = c("0"="white","1"="steelblue"),
-#   cluster_rows = FALSE,
-#   cluster_columns = FALSE,
-#   rect_gp = gpar(col = "black", lwd = 0.5),
-#   row_title = "Hallmarks of Aging",
-#   column_title = "Aging clocks",
-#   height = unit(2, "inch"),
-#   width  = unit(ncol(mat2) / nrow(mat2) * 2, "inch"),
-#   column_names_rot = 30,
-#   show_heatmap_legend = FALSE,
-#   row_names_side = "left",
-#   row_names_gp = gpar(fontsize = 6),
-#   column_names_gp = gpar(fontsize = 6),
-#   row_title_gp = gpar(fontsize = 6, fontface = "bold"),
-#   column_title_gp = gpar(fontsize = 6, fontface = "bold"),
-#   column_split = factor(c(rep("Clock", ncol(mat)), "Cancer"),
-#                         levels = c("Clock", "Cancer")),
-#   cell_fun = function(j, i, x, y, w, h, fill) {
-#     if (colnames(mat2)[j] == "Cancer") {
-#       grid.rect(x, y, w, h, gp = gpar(col = "black", fill = "white", lwd = 0.5))
-#       grid.text(ca[i], x, y, gp = gpar(fontsize = 7))
-#     } else {
-#       grid.rect(x, y, w, h, gp = gpar(col = "black", fill = fill, lwd = 0.5))
-#     }
-#   }
-# )
 
 library("scales")
 show_col(pal_npg("nrc")(10))
@@ -173,7 +131,6 @@ Heatmap(
     }
   }
 )
-
 
 # Panel b -----
 organ_list <- c(
@@ -236,7 +193,6 @@ cox <- function(data, exposures, outcomes, covar, condition = T, early = F) {
     }
   }
 
-
   for (outcome in outcomes) {
     for (exposure in exposures) {
       # Print count##################################################################
@@ -248,7 +204,6 @@ cox <- function(data, exposures, outcomes, covar, condition = T, early = F) {
         " ... (", counter, "/", total_tasks, ", ", percent_done, "% done)"
       )
       ##############################################################################
-
 
       formula_input <- as.formula(paste0(paste0("survival::Surv( `", outcome, "_fu`,`", outcome, "_inci`", ") ~"), paste(c(paste0("`", exposure, "`"), covar), collapse = "+")))
 
@@ -280,27 +235,16 @@ cox <- function(data, exposures, outcomes, covar, condition = T, early = F) {
 
       cox_model <- survival::coxph(formula = formula_input, data = data2)
       cox_summary <- summary(cox_model)
-      # coef_data <- as.data.frame(cox_summary$coefficients[paste0("`",exposure,"`"), "coef"])
-      # se_data <- as.data.frame(cox_summary$coefficients[paste0("`",exposure,"`"), "se(coef)"])
-      # z_data <- as.data.frame(cox_summary$coefficients[paste0("`",exposure,"`"), "z"])
       coef_data <- as.data.frame(cox_summary$coefficients[1, "coef"])
       se_data <- as.data.frame(cox_summary$coefficients[1, "se(coef)"])
       z_data <- as.data.frame(cox_summary$coefficients[1, "z"])
       p_values <- cox_summary$coefficients[1, "Pr(>|z|)"]
       p_values_all[[paste(outcome, exposure)]] <- p_values
 
-
       n_cases_inci <- sum(data2[, paste0(outcome, "_inci")] == 1)
-      # n_cases_base <- sum(data[, paste0(outcome, "_base2")]==1)
       n_cases_base <- sum(data[!is.na(data[, exposure]), paste0(outcome, "_base2")] == 1)
 
       N <- nrow(data2)
-
-      # mean_diff <- data %>%
-      #   summarise(mean_diff = mean(.data[[exposure]][.data[[outcome]] == 1]) -
-      #                         mean(.data[[exposure]][.data[[outcome]] == 0])) %>%
-      #   pull(mean_diff)
-      #
 
       mean_diff <- data %>%
         summarise(
@@ -309,12 +253,10 @@ cox <- function(data, exposures, outcomes, covar, condition = T, early = F) {
         ) %>%
         pull(mean_diff)
 
-
       median_age <- data2 %>%
         filter(!!sym(paste0(outcome, "_inci")) == 1) %>%
         summarise(median_fu = median(as.numeric(!!sym(paste0(outcome, "_fu"))) + age, na.rm = TRUE)) %>%
         pull(median_fu)
-
 
       median_follow_up <- median(as.numeric(data2[[paste0(outcome, "_fu")]]), na.rm = TRUE)
       hr_data <- exp(coef_data)
@@ -368,7 +310,6 @@ cox <- function(data, exposures, outcomes, covar, condition = T, early = F) {
   }
 }
 
-
 # Check cases overlapping between Hesin and Can reg-----
 
 cancer_overlap_summary <- do.call(rbind, lapply(ca_diseases, function(ca) {
@@ -403,7 +344,6 @@ cancer_overlap_summary <- cancer_overlap_summary %>%
     both_over_hesin_pct = 100 * both_case / hesin_case
   )
 
-
 # HeatPlot view function
 ht_ca <- function(data) {
   mat <- xtabs(Beta ~ Outcome + Exposure, data)
@@ -411,18 +351,13 @@ ht_ca <- function(data) {
 
   mat_p <- xtabs(P_Value ~ Outcome + Exposure, data)
   mat_q <- xtabs(FDR_P_Value ~ Outcome + Exposure, data)
-  # mat_beta[mat_p > 0.05] <- 0
   col_fun = colorRamp2(c(-1, 0, 1), c("#007F7F", "white", "#D85F4D"))
 
   Heatmap(mat,
     col = col_fun, na_col = "white", show_column_dend = F, show_row_dend = F, border_gp = gpar(col = "black", lwd = 0.2), rect_gp = gpar(col = "black", lwd = 0.2),
     cluster_rows = F, cluster_columns = F,
-    # width = unit(7, "cm"), height = unit(5, "cm"),
     row_names_side = "left", row_names_gp = gpar(fontsize = 6), column_names_rot = 45,
     column_names_side = "bottom", show_column_names = T, column_names_gp = gpar(fontsize = 6),
-    # row_split=factor(c(rep("Neurodegenerative",5),rep("Psychiatric",5),rep("All-cause mortality",1),rep("Others",6)),levels = c("Neurodegenerative", "Psychiatric","All-cause mortality","Others")),
-    # row_title_gp = gpar(fontsize = 5,fontface = "bold"),
-    # column_split =factor(c(rep("Overall", each = 1),rep("Organ-specific aging", each = 10)),levels = c("Overall", "Organ-specific aging")),
     column_title_gp = gpar(fontsize = 6),
     column_title_side = "bottom",
     cell_fun = function(j, i, x, y, width, height, fill) {
@@ -436,27 +371,11 @@ ht_ca <- function(data) {
     },
     heatmap_legend_param = list(
       at = c(-1, 0, 1),
-      # labels = c("0", "10%", "20%", "30%", "40%"),
       title = NULL,
       legend_height = unit(0.5, "cm"),
       grid_width = unit(0.5, "mm"),
-      # legend_width =unit(1, "mm"),
-      # title_position = "lefttop-rot",
       labels_gp = gpar(col = "black", fontsize = 5)
     ),
-    # right_annotation=rowAnnotation(
-    #   "Disease cases"= anno_barplot(mat_case, border=F, ylim=c(0,6000), gp = gpar(fill =c("#3c5488ff","#00a087ff"), col = c("#3c5488ff","#00a087ff")),
-    #                                 axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(0,3000,6000),labels = c("0","3000", "6000"),labels_rot=0),
-    #   ),
-    #
-    #   "Age gap for each disease" = anno_points(mat_disease_gap, ylim = c(-0.3,0.6),border = F, axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(-0.25,0,0.25,0.5),labels = c("-0.25","0","0.25", "0.5"),labels_rot=0),
-    #                                            pch = 16, size = unit(0.15, "cm"), gp = gpar(col = color_panel,lwd = 0.2)),
-    #
-    #   width = unit(8, "cm"), annotation_name_gp= gpar(fontsize = 6),
-    #   annotation_width=unit(c(1, 2), c("null", "null")),
-    #   gap = unit(3, "mm")
-    #
-    # ),
 
     row_title = NULL
   ) %>% draw()
@@ -475,7 +394,6 @@ dt_aging_2_cancer <- hallmark_all_final %>%
     date_cols_hesin
   ))) %>%
   left_join(ukb_ca_death)
-# mutate(`Liver Cancer_reg_death_date`=pmax(`Liver Cancer_date`,`Liver Cancer_reg_death_date`))
 
 cox_disease_ca <- cox(
   data = dt_aging_2_cancer %>% filter(ca_base_any == 0), # Without any malignant cancer at baseline
@@ -491,13 +409,6 @@ cox_disease_ca <- cox(
 disease_ca <- cox_disease_ca$result_list
 ht_ca(disease_ca)
 
-# organ_mri_list <- c(
-#   "Adipose","Brain","Heart",
-#   "Liver","Pancreas","Kidney","Spleen"
-# )#7
-#
-# organ_mri_pac <- paste0(organ_mri_list, "_mri_res")
-
 ### A.2 (Proteomics, clinical, and metabolomic aging clocks) ----
 
 dt_aging_clock_2_cancer <- hallmark_all_final %>%
@@ -510,13 +421,11 @@ dt_aging_clock_2_cancer <- hallmark_all_final %>%
   left_join(ukb_ca_death) %>%
   mutate(`Liver Cancer_reg_death_date` = pmax(`Liver Cancer_date`, `Liver Cancer_reg_death_date`))
 
-
 table(dt_aging_clock_2_cancer$t1) # 46785
 table(is.na(dt_aging_clock_2_cancer$Organismal_res)) # 53014
 
-
 cox_pac_ca <- cox(
-  data = dt_aging_clock_2_cancer %>% filter(ca_base_any == 0) # %>% mutate(across(all_of(organ_pac), ~ ifelse(t1 == 0, NA, .)))
+  data = dt_aging_clock_2_cancer %>% filter(ca_base_any == 0)
   ,
   exposures = c(
     organ_pac, "phenoage_res", "kdm_res", "met_res"
@@ -531,7 +440,6 @@ cox_pac_ca <- cox(
 
 pac_ca <- cox_pac_ca$result_list
 ht_ca(pac_ca)
-
 
 # Define levels for exposure and outcome
 # Cancer and death
@@ -620,7 +528,6 @@ disease_ca_fomrat <- function(result_list) {
   return(result_disease)
 }
 
-
 # 1a, BA to CA plotting------
 result_cancer_fomrat <- function(result_list) {
   result_disease <- result_list %>%
@@ -683,7 +590,6 @@ cancer_inci <- cox_disease_ca$data %>% select(-any_of(c(date_cols_hesin, "ca_dat
 
 colnames(cancer_inci) <- gsub("_reg_death", "", colnames(cancer_inci))
 
-
 disease_prefixes <- c("ca", "death", ca_diseases)
 
 for (prefix in disease_prefixes) {
@@ -694,7 +600,6 @@ for (prefix in disease_prefixes) {
       NA
     ))
 }
-
 
 aging_cancer_ht <- function(data) {
   ht_opt$ROW_ANNO_PADDING = unit(0.3, "mm")
@@ -709,7 +614,6 @@ aging_cancer_ht <- function(data) {
 
   mat_hr <- xtabs(HR ~ Outcome_label + Exposure_label, data)
 
-  # mat_p <- xtabs(P_Value ~ Outcome_label + Exposure_label, data)
   mat_case <- data %>%
     dplyr::select(Outcome_label, N_Cases_base, N_Cases_inci) %>%
     distinct(Outcome_label, .keep_all = TRUE) %>%
@@ -808,17 +712,8 @@ aging_cancer_ht <- function(data) {
     column_title_gp = gpar(fontsize = 6, fontface = "bold"),
     column_names_side = "bottom", show_column_names = T, column_names_gp = gpar(fontsize = 6),
     row_split = factor(c(rep("Any", 1), rep("Cancer subtypes", 24), rep("All-cause mortality", 1)), levels = c("Any", "Cancer subtypes", "All-cause mortality")),
-    # row_title_gp = gpar(fontsize = 5,fontface = "bold"),
     column_split = factor(c(rep("Aging hallmark disease", each = 10), rep("Organ proteomic aging", each = 16), rep("Metabolic aging", each = 1), rep("Phenotypic aging", each = 2)), levels = c("Aging hallmark disease", "Organ proteomic aging", "Metabolic aging", "Phenotypic aging")),
     column_title_side = "top",
-
-    # cell_fun = function(j, i, x, y, width, height, fill) {
-    #   if(!is.na(mat[i, j]) &  mat_p_fdr[i, j] < 0.05){
-    #     grid.text(sprintf("%.1f", mat[i, j]), x, y, gp = gpar(fontsize = 5))}
-    #   else if((mat_p)[i, j] < 0.05 & (mat)[i, j] > 1) {
-    #     grid.text("+", x, y,gp = gpar(fontsize = 4))
-    #   }
-    # },
 
     cell_fun = function(j, i, x, y, width, height, fill) {
       if (!is.na(mat[i, j]) && !is.na(mat_p_fdr[i, j]) && mat_p_fdr[i, j] < 0.05) {
@@ -829,34 +724,12 @@ aging_cancer_ht <- function(data) {
     },
     heatmap_legend_param = list(
       at = c(-1, 0, 1),
-      # labels = c("0", "10%", "20%", "30%", "40%"),
       title = "Log (HR)",
       legend_height = unit(0.6, "cm"),
       grid_width = unit(0.5, "mm"),
-      # legend_width =unit(1, "mm"),
-      # title_position = "lefttop-rot",
       labels_gp = gpar(col = "black", fontsize = 5),
       title_gp = gpar(col = "black", fontsize = 5)
     ),
-    # left_annotation = rowAnnotation(
-    #   "FDR hits" = anno_lines(
-    #     sig_count_mat,
-    #     gp = gpar(col = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3"), lwd = 0.2),
-    #     add_points = TRUE,
-    #     pt_gp = gpar(col = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3"), pch = 16),
-    #     size = unit(0.5, "mm"),
-    #     border = FALSE,
-    #     axis = TRUE,
-    #     axis_param = list(
-    #       side = "top",
-    #       gp = gpar(fontsize = 5, lwd = 0.2),
-    #       labels_rot = 0
-    #     ),
-    #     width = unit(0.5, "cm")
-    #   ),
-    #   annotation_name_gp = gpar(fontsize = 5),
-    #   annotation_name_rot = c("FDR hits" = 0)
-    # ),
 
     left_annotation = rowAnnotation(
       "FDR hits" = anno_lines(
@@ -899,14 +772,6 @@ aging_cancer_ht <- function(data) {
         gp = gpar(fill = "#CCCCCC80", lwd = 0.2, col = c("black", rep("black", 10))), border = F,
         axis_param = list(gp = gpar(fontsize = 5, col = "black", lwd = 0.2), labels_rot = 0)
       ),
-      # "Cases"=  anno_numeric(mat_case[,1],labels_gp=gpar(fontsize = 4,col="black"),labels_offset = unit(4, "pt"),
-      #                                round_corners = F, align_to = "left",width =unit(1, "cm"), bar_width =  unit(3, "pt"),
-      #                                 bg_gp = gpar(fill = "#00a087ff",col = "#00a087ff"),
-      #                                ), annotation_name_rot = 0,
-
-
-      # "Age gap for each disease" = anno_points(mat_disease_gap, ylim = c(-0.3,0.6),border = F, axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(-0.25,0,0.25,0.5),labels = c("-0.25","0","0.25", "0.5"),labels_rot=0),
-      #                                          pch = 16, size = unit(0.15, "cm"), gp = gpar(col = color_panel,lwd = 0.2)),
 
       width = unit(2, "cm"),
       annotation_name_gp = gpar(fontsize = 5),
@@ -914,20 +779,11 @@ aging_cancer_ht <- function(data) {
       gap = unit(2.5, "mm")
     ),
 
-    # left_annotation = rowAnnotation(
-    #   " " = cancer_class[rownames(mat)],
-    #   col = list(" " = class_col),
-    #   simple_anno_size = unit(1.5, "mm"),
-    #   show_legend = TRUE,
-    #   gp = gpar(col = "black", lwd = 0.2)
-    # ),
-
     row_title = NULL
   ) %>% return()
 }
 
 aging_cancer_ht(aging_cancer_result) %>% draw()
-
 
 cairo_pdf("./Project/PAC and cancer/Figures/fig.1/reg/BA_2_CA.pdf",
   width = 7, height = 3
@@ -944,7 +800,6 @@ for (i in seq_len(3)) {
 }
 
 dev.off()
-
 
 ## *****Section B: CA to BA***** ----
 ### B.1 CA to BA (Any hallmark diseases) ----
@@ -998,7 +853,6 @@ cox_ca_disease_male <- cox(
   covar = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok", "bmi")
 )
 
-
 cox_ca_disease_female <- cox(
   data = dt_cancer_2_aging %>% filter(non_ca_base == 0) %>% filter(sex == 0), # Without any non-ca age-related diseases at baseline
   exposures = c(
@@ -1011,7 +865,6 @@ cox_ca_disease_female <- cox(
   ),
   covar = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok", "bmi")
 )
-
 
 # Formatting Cox results
 process_res <- function(res_list) {
@@ -1053,7 +906,6 @@ ca_disease <- process_res(cox_ca_disease$result_list)
 ca_disease_male <- process_res(cox_ca_disease_male$result_list)
 ca_disease_female <- process_res(cox_ca_disease_female$result_list)
 
-
 # Add test heterogeneity for sex
 het_test_one <- function(outcome, df_male, df_female) {
   m <- df_male %>% filter(Outcome == outcome)
@@ -1086,7 +938,6 @@ phet_results <- do.call(rbind, lapply(outcomes_of_interest, het_test_one,
 ca_disease_female <- ca_disease_female %>% left_join(phet_results %>% select(Outcome, color),
   by = c("subgroup" = "Outcome")
 )
-
 
 CA_2_BA_disease_plot <- ckbplotr::forest_plot(
   panels = list(
@@ -1175,7 +1026,6 @@ dev.off()
 cox_panca_disease <- cox(
   data = hallmark_base %>% filter(non_ca_base == 0), # Without any non-ca age-related diseases at baseline
   outcomes = c(
-    # categories,
     labels_nca[str_detect(labels_nca, "_1")],
     "any_1", "any_2", "any_3", "any_4",
     "death"
@@ -1185,7 +1035,6 @@ cox_panca_disease <- cox(
   ),
   covar = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok", "bmi")
 )
-
 
 panca_disease <- cox_panca_disease$result_list %>%
   mutate(
@@ -1212,7 +1061,6 @@ panca_disease <- cox_panca_disease$result_list %>%
     Outcome = factor(Outcome, levels = c("Any (1st)", "Any (2nd)", "Any (3rd)", "Any (4th)", "GI", "TA", "EA", "LP", "DNS", "CS", "MD", "SCE", "AIC", "Death"))
   )
 
-
 # Baseline cancer cases
 mat <- xtabs(HR ~ Outcome + Exposure, panca_disease) %>% t()
 mat_base <- hallmark_base %>%
@@ -1227,9 +1075,6 @@ mat_base <- hallmark_base %>%
   as.matrix() %>%
   t()
 
-
-# describe(panca_disease$Beta)
-# "#d7301f",
 ht_panca_disease <- function(data) {
   mat <- xtabs(Beta ~ Outcome + Exposure, data) %>% t()
   mat_hr <- xtabs(HR ~ Outcome + Exposure, data) %>% t()
@@ -1240,7 +1085,6 @@ ht_panca_disease <- function(data) {
   mat[(mat_p) > 0.05] <- 0
   mat[(mat_p) < 0.05 & (mat_p_fdr) >= 0.05 & (mat) < 0] <- 0
 
-  # col_fun = colorRamp2(c(-1,0,1,2), c("white","#ef6548","#b30000"))
   col_fun = colorRamp2(c(-1, 0, 1, 2), c("#007F7F", "white", "#ef6548", "#b30000"))
 
   Heatmap(mat,
@@ -1250,8 +1094,6 @@ ht_panca_disease <- function(data) {
     height = nrow(mat) * unit(2, "mm"),
     row_names_side = "left", row_names_gp = gpar(fontsize = 6), column_names_rot = 45,
     column_names_side = "bottom", show_column_names = T, column_names_gp = gpar(fontsize = 6),
-    # row_split=factor(c(rep("Neurodegenerative",5),rep("Psychiatric",5),rep("All-cause mortality",1),rep("Others",6)),levels = c("Neurodegenerative", "Psychiatric","All-cause mortality","Others")),
-    # row_title_gp = gpar(fontsize = 5,fontface = "bold"),
     column_split = factor(c(rep("Overall", each = 4), rep(" ", each = 9), rep("", each = 1)), levels = c("Overall", " ", "")),
     column_title_gp = gpar(fontsize = 6),
     column_title_side = "bottom",
@@ -1260,31 +1102,12 @@ ht_panca_disease <- function(data) {
         grid.text(sprintf("%.1f", mat_hr[i, j]), x, y, gp = gpar(fontsize = 5))
     },
     heatmap_legend_param = list(
-      # at = c(-2, 0, 2),
-      # labels = c("0", "10%", "20%", "30%", "40%"),
       title = "Log (HR)",
       legend_height = unit(0.5, "cm"),
       grid_width = unit(0.5, "mm"),
-      # legend_width =unit(1, "mm"),
-      # title_position = "lefttop-rot",
       labels_gp = gpar(col = "black", fontsize = 5),
       title_gp = gpar(col = "black", fontsize = 5)
     ),
-
-    # right_annotation=rowAnnotation(
-    #   "Prevalent cases"= anno_barplot(mat_base, border=F, ylim=c(0,20000), gp = gpar(fill =c("#3c5488ff"), col = c("#3c5488ff")),
-    #                                 axis_param = list(gp=gpar(fontsize = 4,col="black",lwd=0.2),at=c(500,5000,10000,20000),labels = c("500", "5k","10k","20k"),labels_rot=90),
-    #   ),
-    #
-    #   # "Age gap for each disease" = anno_points(mat_disease_gap, ylim = c(-0.3,0.6),border = F, axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(-0.25,0,0.25,0.5),labels = c("-0.25","0","0.25", "0.5"),labels_rot=0),
-    #   #                                          pch = 16, size = unit(0.15, "cm"), gp = gpar(col = color_panel,lwd = 0.2)),
-    #
-    #   width = unit(1, "cm"),
-    #   annotation_name_gp= gpar(fontsize = 6),
-    #   # annotation_width=unit(c(1, 2), c("null", "null")),
-    #   gap = unit(2, "mm")
-    #
-    # ),
 
     row_title = NULL,
     column_title = NULL,
@@ -1299,7 +1122,6 @@ ca_progression <- hallmark_base %>%
   mutate(across(ends_with("_interval22"), ~ ifelse(. < 0, NA, .))) %>%
   mutate(across(contains("_interval22"), ~ (. / 365.25)))
 
-
 prevalent_cases <- hallmark_base %>%
   mutate(across(ends_with("_interval22"), ~ ifelse(. < 0, NA, .) / 365.25)) %>%
   {
@@ -1308,11 +1130,9 @@ prevalent_cases <- hallmark_base %>%
     data.frame(
       Outcome = interval_cols,
       Overall_Cases = colSums(case_mat, na.rm = TRUE),
-      # Olink1_Cases = colSums(case_mat[.$olink == 1, ], na.rm = TRUE),
       stringsAsFactors = FALSE
     )
   }
-
 
 # Define function
 calculate_beta_matrix <- function(data, var_list1, var_list2, covariates = NULL) {
@@ -1322,10 +1142,6 @@ calculate_beta_matrix <- function(data, var_list1, var_list2, covariates = NULL)
 
   for (i in seq_along(var_list1)) {
     for (j in seq_along(var_list2)) {
-      # if (var_list2[j] == "ca_interval22") {
-      #   data <- data %>% filter(!(ca_D == 1 & ca_inci == 0))
-      # }
-
 
       formula <- as.formula(paste0(var_list1[i], " ~ `", var_list2[j], "`"))
       if (!is.null(covariates)) {
@@ -1337,7 +1153,6 @@ calculate_beta_matrix <- function(data, var_list1, var_list2, covariates = NULL)
 
       p_value <- summary(lm_model)$coefficients[2, "Pr(>|t|)"]
       fdr_p_values[i, j] <- p.adjust(p_value, method = "fdr")
-
 
       base_var <- sub("_interval22$", "_base22", var_list2[j])
       if (base_var %in% names(data)) {
@@ -1368,25 +1183,21 @@ table(ca_progression$ca_base_any) # 39470
 table(ca_progression$ca_base) # 30775
 table(ca_progression$non_ca_base) # 74370
 
-
 result_ca_pac <- calculate_beta_matrix(ca_progression %>% filter(ca_base_any == 1),
   var_list1 = c(organ_pac, "met_res", "phenoage_res", "kdm_res"),
   var_list2 = c("ca_interval22", paste0(setdiff(ca_diseases, "Myelodysplasia"), "_reg_death_interval22")),
-  # var_list2=paste0(disease_prefixes,"_base22"),
   covariates = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok")
 )
 
 result_ca_pac <- calculate_beta_matrix(ca_progression %>% filter(ca_base == 1),
   var_list1 = c(organ_pac, "met_res", "phenoage_res", "kdm_res"),
   var_list2 = c("ca_interval22", paste0(setdiff(ca_diseases, "Myelodysplasia"), "_reg_death_interval22")),
-  # var_list2=paste0(disease_prefixes,"_base22"),
   covariates = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok", "bmi", "non_ca_base")
 )
 
 result_ca_pac <- calculate_beta_matrix(ca_progression,
   var_list1 = c(organ_pac, "met_res", "phenoage_res", "kdm_res"),
   var_list2 = c("ca_interval22", paste0(setdiff(ca_diseases, "Myelodysplasia"), "_reg_death_interval22")),
-  # var_list2=paste0(disease_prefixes,"_base22"),
   covariates = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok", "ca_D")
 )
 
@@ -1406,7 +1217,6 @@ result_ca_pac <- calculate_beta_matrix(ca_progression,
   rownames(result_ca_pac$n_matrix) <- c(organ_list, "MetAge", "PhenoAge", "KDMAge")
   colnames(result_ca_pac$n_matrix) <- disease_prefixes2
 
-
   mat_beta <- (result_ca_pac$beta_matrix) %>% t()
   mat_beta <- mat_beta[match(rownames(xtabs(HR ~ Outcome + Exposure, panca_disease) %>% t()), rownames(mat_beta)), ]
   mat_p <- result_ca_pac$fdr_p_values %>% t()
@@ -1421,7 +1231,6 @@ result_ca_pac <- calculate_beta_matrix(ca_progression,
   mat_beta[mat_n <= 3] <- 0
   mat_beta[mat_n == 0] <- NA
   mat_p[mat_n <= 3] <- NA
-
 
   h2 <- Heatmap(mat_beta,
     na_col = "lightgrey",
@@ -1438,7 +1247,6 @@ result_ca_pac <- calculate_beta_matrix(ca_progression,
     column_dend_gp = gpar(lwd = 0.2),
     show_column_dend = F, show_row_dend = F,
     column_names_rot = 45,
-    # column_split=ukbb_trait_list$Categroy_short,
     column_title_gp = gpar(fontsize = 5),
     column_split = factor(c(rep("Organ-specific aging", each = 16), rep("Met aging", each = 1), rep("Pheno aging", each = 2)), levels = c("Organ-specific aging", "Met aging", "Pheno aging")),
     column_title_side = "top",
@@ -1456,13 +1264,11 @@ result_ca_pac <- calculate_beta_matrix(ca_progression,
     },
     heatmap_legend_param = list(
       at = c(-0.1, 0, 0.1),
-      # labels = c(-0.1, 0, 0.5),
       title = "beta",
       title_gp = gpar(fontsize = 5),
       legend_height = unit(1, "cm"),
       grid_width = unit(0.5, "mm"),
       legend_width = unit(1, "mm"),
-      # title_position = "lefttop-rot",
       labels_gp = gpar(col = "black", fontsize = 5)
     ),
     right_annotation = rowAnnotation(
@@ -1471,12 +1277,8 @@ result_ca_pac <- calculate_beta_matrix(ca_progression,
         axis_param = list(gp = gpar(fontsize = 4, col = "black", lwd = 0.2), at = c(500, 10000, 20000, 40000), labels = c("500", "10k", "20k", "40k"), labels_rot = 90),
       ),
 
-      # "Age gap for each disease" = anno_points(mat_disease_gap, ylim = c(-0.3,0.6),border = F, axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(-0.25,0,0.25,0.5),labels = c("-0.25","0","0.25", "0.5"),labels_rot=0),
-      #                                          pch = 16, size = unit(0.15, "cm"), gp = gpar(col = color_panel,lwd = 0.2)),
-
       width = unit(1, "cm"),
       annotation_name_gp = gpar(fontsize = 6),
-      # annotation_width=unit(c(1, 2), c("null", "null")),
       gap = unit(2, "mm")
     ),
     width = ncol(mat_beta) * unit(3, "mm"),
@@ -1511,7 +1313,6 @@ non_ca_date_cols <- setdiff(
   c("High Cholesterol, High Triglycerides, Low HDL, Raised LDL", "Myasthenia Gravis")
 ) %>% paste0("_date") # 56
 
-
 dt_aging_2_disease_imaging <- hallmark_all_final %>%
   select(
     eid, "any_base", "non_ca_base", "date_visit_imaging1",
@@ -1533,7 +1334,6 @@ dt_aging_2_disease_imaging <- hallmark_all_final %>%
 
 tmp <- dt_aging_2_disease_imaging %>%
   filter(!is.na(Brain_res) & !is.na(Brain_mri_res) & !is.na(met_res) & !is.na(phenoage_res))
-# 7582
 
 library(ComplexHeatmap)
 library(circlize)
@@ -1584,7 +1384,6 @@ Heatmap(
   }
 )
 
-
 dt_aging_2_disease_imaging$non_ca_date <- do.call(
   pmin,
   c(
@@ -1613,13 +1412,6 @@ table(dt_aging_2_disease_imaging$ca_imaging)
 cox_pac_disease_imaging <- cox(
   data = dt_aging_2_disease_imaging %>% filter(ca_imaging != 1),
   outcomes = c(
-    # setdiff(
-    #   hesin_all_clean %>%
-    #     filter(Category != "Cancers") %>%
-    #     distinct(Disease) %>%
-    #     pull(Disease),
-    #   c("High Cholesterol, High Triglycerides, Low HDL, Raised LDL","Myasthenia Gravis")
-    # )
 
     "ca",
     paste0(ca_diseases %>% setdiff(., "MGUS"), "_reg_death"),
@@ -1627,7 +1419,6 @@ cox_pac_disease_imaging <- cox(
   ),
   exposures = c(
     organ_mri_pac
-    # organ_pac,"phenoage_res","kdm_res","met_res"
   ),
   covar = c(
     "age",
@@ -1660,39 +1451,6 @@ cox_pac_disease <- cox(
   covar = c("age", "sex", "ethnic", "edu", "tdi", "center", "pa", "smok", "bmi")
 )
 
-
-# cox_pac_death <- cox(
-#   data=hallmark_base %>% filter(non_ca_base==0) %>% filter(cancer_base==0),
-#   outcomes =c("any_1","any_2","any_3","any_4","death"),
-#   exposures=c(organ_pac,"phenoage_res","kdm_res","met_res"),
-#   covar=c("age","sex","ethnic","edu","tdi","center","pa","smok","bmi")
-# )
-
-
-# tmp <- disease_map %>% select(Disease,Category) %>%  filter(Category!="Cancers") %>% filter(Disease != "High Cholesterol, High Triglycerides, Low HDL, Raised LDL")
-# tmp2 <- cox_pac_disease$result_list
-
-
-# incident_table <- hallmark_base %>%
-#   summarise(across(
-#     all_of(
-#       paste0(
-#         hesin_all_clean %>%
-#           filter(Category != "Cancers") %>%
-#           filter(Disease != "High Cholesterol, High Triglycerides, Low HDL, Raised LDL") %>%
-#           distinct(Disease) %>%
-#           pull(),
-#         "_inci22"
-#       )
-#     ),
-#     ~ sum(.x, na.rm = TRUE)
-#   )) %>%
-#   tidyr::pivot_longer(everything(),
-#                       names_to = "Disease",
-#                       values_to = "Incident_cases") %>%
-#   mutate(Disease = gsub("_inci22$", "", Disease))
-
-
 ht_pac_disease <- function(data) {
   tmp <- disease_map %>%
     select(Disease, Category) %>%
@@ -1721,7 +1479,6 @@ ht_pac_disease <- function(data) {
   )
   tmp$Disease <- factor(tmp$Disease, levels = unique(tmp$Disease))
 
-
   incident_table <- hallmark_base %>%
     summarise(across(
       all_of(
@@ -1746,7 +1503,6 @@ ht_pac_disease <- function(data) {
     column_to_rownames("Disease") %>%
     mutate(log2(Incident_cases))
 
-
   data <- data %>%
     mutate(Outcome = factor(Outcome, levels = tmp$Disease)) %>%
     mutate(
@@ -1763,7 +1519,6 @@ ht_pac_disease <- function(data) {
     ) %>%
     mutate(Exposure = factor(Exposure, levels = pac_levels))
 
-
   mat <- xtabs(Beta ~ Outcome + Exposure, data)
   mat_HR <- xtabs(HR ~ Outcome + Exposure, data)
   mat[abs(mat) == 0] <- NA
@@ -1773,7 +1528,6 @@ ht_pac_disease <- function(data) {
   mat[(mat_p) >= 0.05] <- 0
   mat[(mat_p) < 0.05 & (mat_q) >= 0.05 & (mat) < 0] <- 0
 
-  # mat_beta[mat_p > 0.05] <- 0
   col_fun = colorRamp2(c(-1, 0, 1), c("#007F7F", "white", "#D85F4D"))
 
   ht_opt$ROW_ANNO_PADDING = unit(0.6, "mm")
@@ -1781,11 +1535,9 @@ ht_pac_disease <- function(data) {
   Heatmap(mat,
     col = col_fun, na_col = "white", show_column_dend = F, show_row_dend = F, border_gp = gpar(col = "black", lwd = 0.2), rect_gp = gpar(col = "black", lwd = 0.2),
     cluster_rows = F, cluster_columns = F,
-    # width = unit(7, "cm"), height = unit(5, "cm"),
     row_names_side = "left", row_names_gp = gpar(fontsize = 6), column_names_rot = 45,
     column_names_side = "bottom", show_column_names = T, column_names_gp = gpar(fontsize = 6),
     row_split = factor(tmp$Category),
-    # row_split=factor(c(rep("Neurodegenerative",5),rep("Psychiatric",5),rep("All-cause mortality",1),rep("Others",6)),levels = c("Neurodegenerative", "Psychiatric","All-cause mortality","Others")),
     row_title_gp = gpar(fontsize = 5, fontface = "bold"),
     column_split = factor(c(rep("Proteomic", each = 16), rep("Metabolomic", each = 1), rep("Clinical", each = 2)),
       levels = c("Proteomic", "Metabolomic", "Clinical")
@@ -1802,13 +1554,9 @@ ht_pac_disease <- function(data) {
       }
     },
     heatmap_legend_param = list(
-      # at = c(-2, 0, 2),
-      # labels = c("0", "10%", "20%", "30%", "40%"),
       title = "Log (HR)",
       legend_height = unit(1, "cm"),
       grid_width = unit(0.5, "mm"),
-      # legend_width =unit(1, "mm"),
-      # title_position = "lefttop-rot",
       labels_gp = gpar(col = "black", fontsize = 5),
       title_gp = gpar(col = "black", fontsize = 5)
     ),
@@ -1834,25 +1582,10 @@ ht_pac_disease <- function(data) {
       ), width = unit(1, "cm"),
       annotation_name_gp = gpar(fontsize = 6)
     ),
-    #   rowAnnotation(
-    #   "Disease cases"= anno_barplot(incident_table %>% select(Incident_cases), border=F, ylim=c(0,6000),
-    #                                 gp = gpar(fill =c("#3c5488ff"), col = c("#3c5488ff")),
-    #                                 axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(0,3000,6000),labels = c("0","3000", "6000"),labels_rot=0),
-    #   ),
-    #
-    #   # "Age gap for each disease" = anno_points(mat_disease_gap, ylim = c(-0.3,0.6),border = F, axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(-0.25,0,0.25,0.5),labels = c("-0.25","0","0.25", "0.5"),labels_rot=0),
-    #   #                                          pch = 16, size = unit(0.15, "cm"), gp = gpar(col = color_panel,lwd = 0.2)),
-    #
-    #   width = unit(8, "cm"), annotation_name_gp= gpar(fontsize = 6),
-    #   annotation_width=unit(c(1, 2), c("null", "null")),
-    #   gap = unit(3, "mm")
-    #
-    # ),
 
     column_title = NULL
   ) %>% draw()
 }
-
 
 ht_pac_disease(cox_pac_disease$result_list)
 
@@ -1861,7 +1594,6 @@ cairo_pdf("./Project/PAC and cancer/Figures/fig.1/reg/BA_2_disease.pdf",
 )
 ht_pac_disease(cox_pac_disease$result_list)
 dev.off()
-
 
 ### C.2 BA to disease in CA patients----
 # Note: too few cases
@@ -1935,7 +1667,6 @@ fig2d <- ggplot(aging_disease_inca_results, aes(x = Category, y = pmin(-log10(FD
     legend.box.background = element_rect(fill = "transparent", color = NA),
     legend.key = element_rect(fill = "transparent", color = NA),
     panel.border = element_rect(color = "black", size = 0.1),
-    # legend.title =element_blank(),
     legend.key.width = unit(0.1, "cm"),
     axis.text.x = element_text(color = "black", size = 5, angle = 45, vjust = 0.5),
     axis.text.y = element_text(color = "black", size = 5),
@@ -1943,17 +1674,13 @@ fig2d <- ggplot(aging_disease_inca_results, aes(x = Category, y = pmin(-log10(FD
     legend.spacing = unit(0, "cm"), # Adjust spacing between legend items
     legend.key.spacing.y = unit(0, "pt"),
     legend.box.spacing = margin(0),
-    # legend.margin = margin(t = 1, b =1, unit = "pt"),
-    # legend.box.margin = margin(t = 1, b = 1, unit = "pt"),
     plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"),
     strip.background = element_blank(),
     legend.title = element_text(size = 5),
-    # panel.spacing = unit(0.01, "cm")
   ) +
   scale_y_continuous(
     limits = c(
       -4, 101
-      # max(-log10(aging_disease_inca_results$FDR_P_Value), na.rm = TRUE) + 2
     ), expand = expansion(add = c(0, 0.5))
   ) +
   ggnewscale::new_scale_fill() +
@@ -1982,10 +1709,9 @@ fig2d <- ggplot(aging_disease_inca_results, aes(x = Category, y = pmin(-log10(FD
   ) +
   coord_cartesian(clip = "off")
 
-
 ### C.3 BA to disease (all) in CA patients----
 cox_pac_disease_ca_all <- cox(
-  data = hallmark_base2 %>% filter(ca_base_any == 1 & non_ca_base == 0), # %>%  mutate(across(all_of(organ_pac), ~ ifelse(t1 == 0, NA, .))),
+  data = hallmark_base2 %>% filter(ca_base_any == 1 & non_ca_base == 0),
   outcomes = c(
     labels_nca[str_detect(labels_nca, "_1")],
     "any_1", "any_2", "any_3", "any_4", "death"
@@ -2022,7 +1748,7 @@ ht_ca(aging_disease_inca_all_results)
 # Add interaction between aging and death/disease
 
 result_list_death <- cox(
-  data = hallmark_base2, # %>%  mutate(across(all_of(organ_pac), ~ ifelse(t1 == 0, NA, .))),
+  data = hallmark_base2,
   exposures = "bmi",
   outcomes = c(
     "any_1", "any_2", "any_3", "any_4",
@@ -2084,17 +1810,6 @@ p_interaction <- cox_intearction(c(organ_pac, "met_res", "kdm_res", "phenoage_re
 p_interaction_ordered <- p_interaction %>%
   select(c(paste0("p_", c("any1", "any2", "any3", "any4", "GI", "TA", "EA", "LP", "DNS", "CS", "MD", "SCE", "AIC", "death"))))
 
-# Corrected for FDR P
-# p_cols <- grep("^p_", names(p_interaction), value = TRUE)
-#
-# p_interaction[, paste0(p_cols, "_fdr")] <-
-#   matrix(
-#     p.adjust(unlist(p_interaction[, p_cols]), method = "fdr"),
-#     nrow = nrow(p_interaction),
-#     byrow = FALSE
-#   )
-#
-
 p_interaction_result <- p_interaction %>%
   mutate(var = gsub("_res", "", var)) %>%
   mutate(
@@ -2128,10 +1843,7 @@ ht_ca_ungroup <- function(data) {
     height = nrow(mat) * unit(2, "mm"),
     row_names_side = "left", row_names_gp = gpar(fontsize = 6), column_names_rot = 45,
     column_names_side = "bottom", show_column_names = T, column_names_gp = gpar(fontsize = 6),
-    # row_split=factor(c(rep("Neurodegenerative",5),rep("Psychiatric",5),rep("All-cause mortality",1),rep("Others",6)),levels = c("Neurodegenerative", "Psychiatric","All-cause mortality","Others")),
-    # row_title_gp = gpar(fontsize = 5,fontface = "bold"),
     column_split = factor(c(rep("Overall", each = 4), rep(" ", each = 9), rep("", each = 1)), levels = c("Overall", " ", "")),
-    # column_title = "Multiomic aging clocks and hallmark diseases\nand death in cancer patients",
     column_title = NULL,
     column_title_gp = gpar(fontsize = 6, fontface = "bold"),
     column_title_side = "top",
@@ -2148,60 +1860,36 @@ ht_ca_ungroup <- function(data) {
     },
     heatmap_legend_param = list(
       at = c(-1, 0, 1),
-      # labels = c("0", "10%", "20%", "30%", "40%"),
       title = "Log (HR)",
       legend_height = unit(0.6, "cm"),
       grid_width = unit(0.5, "mm"),
-      # legend_width =unit(1, "mm"),
-      # title_position = "lefttop-rot",
       labels_gp = gpar(col = "black", fontsize = 4.5),
       title_gp = gpar(col = "black", fontsize = 4.5)
     ),
     right_annotation = rowAnnotation(
       `Interaction (death)` = (p_interaction_result$death),
       `Interaction (any)` = (p_interaction_result$any),
-      # `Interaction (AIC)` = (p_interaction_result$aic),
 
       gp = gpar(col = "black", lwd = 0.3),
       gap = unit(1, "mm"),
       col = list(
         `Interaction (death)` = colorRamp2(c(0, 1), c("white", "#4575b4")),
         `Interaction (any)` = colorRamp2(c(0, 1), c("white", "#4575b4"))
-        # `Interaction (AIC)` = colorRamp2(c(0, 1), c( "white", "#4575b4"))
       ),
       width = unit(0.3, "cm"),
       simple_anno_size_adjust = TRUE,
       show_legend = c(
         `Interaction (death)` = FALSE, `Interaction (any)` = FALSE
-        # `Interaction (AIC)` = FALSE
       ),
       annotation_name_gp = gpar(fontsize = 4.5),
       annotation_name_rot = 45
     ),
 
-
-    # right_annotation=rowAnnotation(
-    #   "Prevalent cases"= anno_barplot(mat_base, border=F, ylim=c(0,20000), gp = gpar(fill =c("#3c5488ff"), col = c("#3c5488ff")),
-    #                                 axis_param = list(gp=gpar(fontsize = 4,col="black",lwd=0.2),at=c(500,5000,10000,20000),labels = c("500", "5k","10k","20k"),labels_rot=90),
-    #   ),
-    #
-    #   # "Age gap for each disease" = anno_points(mat_disease_gap, ylim = c(-0.3,0.6),border = F, axis_param = list(gp=gpar(fontsize = 5,col="black",lwd=0.2),at=c(-0.25,0,0.25,0.5),labels = c("-0.25","0","0.25", "0.5"),labels_rot=0),
-    #   #                                          pch = 16, size = unit(0.15, "cm"), gp = gpar(col = color_panel,lwd = 0.2)),
-    #
-    #   width = unit(1, "cm"),
-    #   annotation_name_gp= gpar(fontsize = 6),
-    #   # annotation_width=unit(c(1, 2), c("null", "null")),
-    #   gap = unit(2, "mm")
-    #
-    # ),
-
     row_title = NULL,
   ) %>% return()
 }
 
-
 ht_ca_ungroup(aging_disease_inca_all_results)
-
 
 # Combined <Figure 2>---------------
 fig2a <- grid.grabExpr({
@@ -2216,7 +1904,6 @@ fig2a <- grid.grabExpr({
   }
 })
 
-
 fig2b <- grid.grabExpr(
   draw(h1 + h2,
     ht_gap = unit(1, "mm"), auto_adjust = T,
@@ -2225,7 +1912,6 @@ fig2b <- grid.grabExpr(
   )
 )
 
-
 fig2c <- grid.grabExpr(
   {
     ht <- ht_ca_ungroup(aging_disease_inca_all_results)
@@ -2233,7 +1919,6 @@ fig2c <- grid.grabExpr(
   },
   wrap = TRUE
 )
-
 
 cairo_pdf("./Project/PAC and cancer/Figures/fig.1/reg/Fig.2.pdf",
   width = 7.2, height = 7.8
@@ -2246,7 +1931,6 @@ plot_grid(fig2a, fig2b,
   theme(plot.margin = margin(0.3, 0.1, 0, 0.1, "cm"))
 
 dev.off()
-
 
 #### Traj analysis----
 # Aging trajectory analysis by aging clocks and cancer types
@@ -2267,7 +1951,6 @@ traj_disease_prefixes <- c(
   "ca",
   hesin_all_clean %>% filter(Category == "Cancers") %>% distinct(Disease) %>% pull() %>% setdiff(c("Liver Mets.", "Lymph Node Mets."))
 )
-
 
 for (prefix in traj_disease_prefixes) {
   interval_col <- paste0(prefix, "_interval")
@@ -2334,7 +2017,6 @@ control_cancer <- case_control_match(traj, "Cancers_inci", "Cancers_interval")
 matched_cancer <- rbind(traj %>% filter(Cancers_inci == 1 | Cancers_base == 1), control_cancer) %>%
   mutate(Cancers_con = factor(Cancers_con, levels = c(0, 1), labels = c("Control", "Cancers")))
 
-
 cancer_vars <- paste0(traj_disease_prefixes, "_interval")
 traj_long <- traj %>%
   pivot_longer(
@@ -2347,27 +2029,12 @@ traj_long <- traj %>%
 table(traj_long$Cancer_type)
 
 # Any cancer type and phenoAge
-# ggplot(traj_long %>% filter(ca_inci!=1),
-#        aes(x = Cancer_interval, y = phenoage_res, color = Cancer_type)) +
-#   geom_smooth(method = "loess", se = FALSE, size = 0.3) +
-#   labs(
-#     x = "Time since diagnosis",
-#     y = "Age gap",
-#     color = "Cancer type"
-#   ) +
-#   theme_classic(base_size = 6, base_line_size = 0.1) +
-#   theme(
-#     legend.position = "right",
-#     legend.key.size = unit(0.3, "cm"),
-#     legend.title = element_text(size = 6),
-#     legend.text = element_text(size = 5)
-#   )
 
 traj$ca_interval
 
 ggplot(
   traj,
-  aes(x = `ca_interval`, y = phenoage_res), # color=Cancers_con, fill=Cancers_con, group=Cancers_con)
+  aes(x = `ca_interval`, y = phenoage_res),
 ) +
   geom_smooth(method = "loess", se = F, size = 0.2) + # Linear regression lines with confidence intervals
   labs(
@@ -2385,10 +2052,6 @@ ggplot(
     legend.key.size = unit(0.2, "cm")
   ) +
   guides(fill = guide_legend(nrow = 2))
-
-
-# load("./Project/PAC and cancer/Data/UKB/ukb_aging_ca_fig1_v2.RData")
-
 
 ### Saving working image--------
 save.image("./Project/PAC and cancer/Data/UKB/ukb_aging_ca_fig1.RData")
