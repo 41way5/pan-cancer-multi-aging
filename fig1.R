@@ -418,8 +418,7 @@ dt_aging_clock_2_cancer <- hallmark_all_final %>%
     c(organ_pac, "phenoage_res", "kdm_res", "met_res"), # exposure
     date_cols_hesin
   ))) %>%
-  left_join(ukb_ca_death) %>%
-  mutate(`Liver Cancer_reg_death_date` = pmax(`Liver Cancer_date`, `Liver Cancer_reg_death_date`))
+  left_join(ukb_ca_death)
 
 table(dt_aging_clock_2_cancer$t1) # 46785
 table(is.na(dt_aging_clock_2_cancer$Organismal_res)) # 53014
